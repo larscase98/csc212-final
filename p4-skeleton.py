@@ -37,9 +37,10 @@ data = open(temp_output_file,'r')
 #This loop repeats while openface is still running
 #Inside the loop, we read from the file that openface outputs to and check to see if there's anything new
 #We handle the data if there is any, and wait otherwise
+shockDetected=False;
+smileDetected=False;
 while(of2.poll() == None):
 	line = data.readline().strip()
-	
 	if(line != ""):
 		try:
 			#Parse the line and save the useful values
@@ -63,28 +64,25 @@ while(of2.poll() == None):
 
 		#Surprise variables
 		
-		
-		eyebrowL = landmarks[21]
-		eyebrowR = landmarks[24]
-		eyebrowBottL=landmarks[40]
-		eyebrowBottR=landmarks[46]
-
-		noseTop = landmarks[27]
+		noseTop = landmarks[29]
 		noseBott = landmarks[30]
-		
 		baselineDist = noseBott[1]-noseTop[1]
 
-	
+		#print(baselineDist)
+		eyebrowL = landmarks[19]
+		eyebrowR = landmarks[24]
+		eyebrowBottL=landmarks[37]
+		eyebrowBottR=landmarks[44]
 
-		
 	
-		rSmile = landmarks[54]
-		lSmile = landmarks[48]
-		brSmile = landmarks[55]
-		blSmile = landmarks[59]
+		rSmileTip = landmarks[54]
+		lSmileTip = landmarks[48]
+		centerSmile =landmarks[57]
+		bottRightSmile = landmarks[57]
 		
-		smileValR = rSmile[1]-brSmile[1]
-		smileValL = lSmile[1]-blSmile[1]
+		smileValR = centerSmile[1]-rSmileTip[1]
+		smileValL = centerSmile[1]-lSmileTip[1]
+		#print(smileValR,"\t",smileValL,"\t", baselineDist)
 
 		topL = landmarks[61] #uses three points on top and bottom of the lip
 		topM = landmarks[62]
@@ -93,23 +91,47 @@ while(of2.poll() == None):
 		bottL = landmarks[67]
 		bottM = landmarks[66]
 		bottR = landmarks[65]
-
+		#print("\t",(eyebrowBottL[1]-eyebrowL[1]))
+		
 		leftSurprise = topL[1]-bottL[1]
 		midSurprise = bottM[1]-topM[1]
 		rightSurprise = topR[1]-bottR[1]
 
 		sideFace = landmarks[13]
-		smileDist = sideFace[0]-rSmile[0]
+		#smileDist = sideFace[0]+rSmile[0]
+		
+		eyebrowHeight=(eyebrowBottL[1]-eyebrowL[1])
 
 		#print(smileDist,"\t", baselineDist)
 		#if(smileValR+smileValL<-20 and leftSurprise>-14 and midSurprise>-20):
-		if(smileDist<baselineDist):
-			print("SMILE DETECTED")
+		#print(smileDist,"\t", baselineDist)
+
+		if(smileDetected==False):
+			if(smileValR>baselineDist*1.5 and smileValL>baselineDist*1.5 and eyebrowHeight<baselineDist*2.5 and midSurprise<baselineDist*1.2):
+				print("SMILE DETECTED")
+				smileDetected=True
+
+		if(smileDetected==True):
+			if(smileValR<baselineDist*1.2 and smileValL<baselineDist*1.2):
+				smileDetected=False;
+				print("reset smile","\n")
+
+
+		#print(midSurprise,"\t", baselineDist)
 		
-		if((eyebrowBottL[1]-eyebrowL[1])>baselineDist and midSurprise>baselineDist*.6):
-			print("SHOCKED")
+		#print(eyebrowHeight,"\t", baselineDist)
 		
-	
+		if(shockDetected==False):
+			if((eyebrowBottL[1]-eyebrowL[1])>baselineDist*2.5 and midSurprise>baselineDist*2):
+				print("SHOCKED")
+				shockDetected=True
+
+		
+		if(shockDetected ==True):
+			#print("waiting to reset")
+			if((eyebrowBottL[1]-eyebrowL[1])<baselineDist*2 and midSurprise<baselineDist):
+				shockDetected=False
+				print("reset shock","\n")
 
 
 	else:
