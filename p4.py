@@ -39,6 +39,10 @@ data = open(temp_output_file,'r')
 #We handle the data if there is any, and wait otherwise
 shockDetected=False;
 smileDetected=False;
+pitch_prev, yaw_prev, roll_prev = 0, 0, 0
+pitch_count, yaw_count, roll_count = 0, 0, 0
+pitch_nodding, yaw_nodding, roll_nodding = False, False, False
+pitch_hasPrinted, yaw_hasPrinted, roll_hasPrinted = False, False, False
 while(of2.poll() == None):
 	line = data.readline().strip()
 	if(line != ""):
@@ -53,15 +57,9 @@ while(of2.poll() == None):
 		except ValueError:
 			#This exception handles the header line
 			continue
-			
-		#********************************************
-		# Most, maybe all, of your code will go here
-		#********************************************
 		
-		#Replace this line
-		#print("time:", timestamp, "\tpitch:", pitch, "\tyaw:", yaw, "\troll:", roll)
-
-
+		## FACIAL EXPRESSION SECTION
+		
 		#Surprise variables
 		
 		noseTop = landmarks[29]
@@ -93,47 +91,97 @@ while(of2.poll() == None):
 		bottR = landmarks[65]
 		#print("\t",(eyebrowBottL[1]-eyebrowL[1]))
 		
-		leftSurprise = topL[1]-bottL[1]
-		midSurprise = bottM[1]-topM[1]
-		rightSurprise = topR[1]-bottR[1]
+		leftSurprise = topL[1] - bottL[1]
+		midSurprise = bottM[1] - topM[1]
+		rightSurprise = topR[1] - bottR[1]
 
 		sideFace = landmarks[13]
 		#smileDist = sideFace[0]+rSmile[0]
 		
-		eyebrowHeight=(eyebrowBottL[1]-eyebrowL[1])
+		eyebrowHeight= eyebrowBottL[1] - eyebrowL[1]
 
 		#print(smileDist,"\t", baselineDist)
 		#if(smileValR+smileValL<-20 and leftSurprise>-14 and midSurprise>-20):
 		#print(smileDist,"\t", baselineDist)
 
-		if(smileDetected==False):
-			if(smileValR>baselineDist*1.5 and smileValL>baselineDist*1.5 and eyebrowHeight<baselineDist*2.5 and midSurprise<baselineDist*1.2):
-				print("SMILE DETECTED")
-				smileDetected=True
+		if (not smileDetected) and (smileValR > baselineDist * 1.5) and (smileValL>baselineDist * 1.5) and 
+		   (eyebrowHeight<baselineDist * 2.5)  and (midSurprise<baselineDist*1.2):
+			print("SMILE DETECTED")
+			smileDetected=True
 
-		if(smileDetected==True):
-			if(smileValR<baselineDist*1.2 and smileValL<baselineDist*1.2):
-				smileDetected=False;
-				print("reset smile","\n")
+		if (smileDetected) and (smileValR < baselineDist * 1.2) and (smileValL<baselineDist*1.2):
+			smileDetected=False;
+			print("reset smile","\n")
 
 
 		#print(midSurprise,"\t", baselineDist)
 		
 		#print(eyebrowHeight,"\t", baselineDist)
 		
-		if(shockDetected==False):
-			if((eyebrowBottL[1]-eyebrowL[1])>baselineDist*2.5 and midSurprise>baselineDist*2):
-				print("SHOCKED")
-				shockDetected=True
+		if (not shockDetected) and ((eyebrowBottL[1] - eyebrowL[1]) > baselineDist * 2.5) and (midSurprise>baselineDist*2):
+			print("SHOCKED")
+			shockDetected=True
 
 		
-		if(shockDetected ==True):
+		if (shockDetected):
 			#print("waiting to reset")
-			if((eyebrowBottL[1]-eyebrowL[1])<baselineDist*2 and midSurprise<baselineDist):
+			if (eyebrowBottL[1] - eyebrowL[1]) < baselineDist * 2 and (midSurprise<baselineDist):
 				shockDetected=False
 				print("reset shock","\n")
 
+		## NODDING SECTION
 
+		# track derivative of pitch, roll, and yaw
+		pitch_diff = pitch - pitch_prev
+		yaw_diff = yaw - yaw_prev
+		roll_diff = roll - roll_prev
+		pitch_prev, yaw_prev, roll_prev = pitch, yaw, roll
+		
+		# add to nodding counter if not already registered as nodding
+		# decrease counter if not nodding
+		if (abs(pitch_diff) > .05) and (not pitch_nodding):
+			pitch_count += 1
+		elif pitch_count > 0:
+			pitch_count += -1
+		if abs(yaw_diff) > .05 and (not yaw_nodding):
+			yaw_count += 1
+		elif yaw_count > 0:
+			yaw_count += -1
+		if (abs(roll_diff) > .05) and (not roll_nodding):
+			roll_count += 1
+		elif roll_count > 0:
+			roll_count += -1
+			
+		# if nod count ever reaches 0, reset booleans
+		if pitch_count == 0:
+			pitch_nodding = False
+			pitch_hasPrinted = False
+		if yaw_count == 0:
+			yaw_nodding = False
+			yaw_hasPrinted = False
+		if roll_count == 0:
+			roll_nodding = False
+			roll_hasPrinted = False
+		
+		# change nodding boolean if counter reaches threshold
+		if (pitch_count > 6) and (not pitch_nodding): # count threshold chosen to tune detection sensitivity
+			pitch_nodding = True
+		if (yaw_count > 6) and (not yaw_nodding):
+			yaw_nodding = True
+		if (roll_count > 6) and (not roll_nodding):
+			roll_nodding = True
+		
+		# print based on booleans
+		if (pitch_nodding) and (not pitch_hasPrinted):
+			print("Yes")
+			pitch_hasPrinted = True
+		if (yaw_nodding) and (not yaw_hasPrinted):
+			print("No")
+			yaw_hasPrinted = True
+		if (roll_nodding( and (not roll_hasPrinted):
+			print("Indian Nod")
+			roll_hasPrinted = True
+		
 	else:
 		time.sleep(.01)
 	
