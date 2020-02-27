@@ -104,8 +104,8 @@ while(of2.poll() == None):
 		#if(smileValR+smileValL<-20 and leftSurprise>-14 and midSurprise>-20):
 		#print(smileDist,"\t", baselineDist)
 
-		if (not smileDetected) and (smileValR > baselineDist * 1.5) and (smileValL>baselineDist * 1.5) and 
-		   (eyebrowHeight<baselineDist * 2.5)  and (midSurprise<baselineDist*1.2):
+		if ((not smileDetected) and (smileValR > baselineDist * 1.5) and (smileValL>baselineDist * 1.5) and 
+		   (eyebrowHeight<baselineDist * 2.5)  and (midSurprise<baselineDist*1.2)):
 			print("SMILE DETECTED")
 			smileDetected=True
 
@@ -178,7 +178,7 @@ while(of2.poll() == None):
 		if (yaw_nodding) and (not yaw_hasPrinted):
 			print("No")
 			yaw_hasPrinted = True
-		if (roll_nodding( and (not roll_hasPrinted):
+		if (roll_nodding) and (not roll_hasPrinted):
 			print("Indian Nod")
 			roll_hasPrinted = True
 		
